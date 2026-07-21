@@ -45,9 +45,8 @@ h3 { font-size: 1.25rem; }
 .button-quiet { background: transparent; }
 .button-quiet:hover, .button-quiet:focus-visible { border-color: var(--ink); }
 .button:disabled { cursor: not-allowed; opacity: .4; }
-.profile-stamp { align-items: center; aspect-ratio: 1; background: var(--yellow); border-radius: 50%; display: flex; flex-direction: column; justify-content: center; justify-self: center; max-width: 270px; outline: 1px solid var(--ink); outline-offset: 10px; transform: rotate(5deg); width: 100%; }
-.stamp-letter { font-size: clamp(5rem, 13vw, 10rem); font-weight: 900; line-height: .8; }
-.stamp-note { font-size: .72rem; font-weight: 700; margin-top: 1.5rem; text-align: center; text-transform: uppercase; }
+.profile-stamp { aspect-ratio: 1; background: var(--yellow); border-radius: 50%; justify-self: center; max-width: 270px; outline: 1px solid var(--ink); outline-offset: 10px; overflow: hidden; transform: rotate(5deg); width: 100%; }
+.profile-stamp img { display: block; height: 100%; object-fit: cover; transform: rotate(-5deg) scale(1.12); width: 100%; }
 .content-section { border-top: 1px solid var(--line); }
 .section-heading { margin-bottom: 2.5rem; }
 .section-heading-row { align-items: end; display: flex; justify-content: space-between; gap: 1rem; }
