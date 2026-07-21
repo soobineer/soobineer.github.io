@@ -254,16 +254,80 @@
   const slotStatus = document.querySelector('#slot-status');
   const slotResult = document.querySelector('#slot-result');
   const slotBetButtons = document.querySelectorAll('[data-bet-change]');
+  const slotFireworks = document.querySelector('#slot-fireworks');
+  const slotSoundToggle = document.querySelector('#slot-sound-toggle');
 
-  if (slotSpinButton && slotResetButton && slotReels && slotBalanceValue && slotBetValue && slotStatus && slotResult) {
+  if (slotSpinButton && slotResetButton && slotReels && slotBalanceValue && slotBetValue && slotStatus && slotResult && slotFireworks && slotSoundToggle) {
     const slotSymbols = ['🍒', '🍋', '🔔', '⭐', '💎', '🍀', '7️⃣'];
     const slotReelSymbols = slotReels.querySelectorAll('.reel-symbol');
     let slotBalance = 10000;
     let slotBet = 100;
     let slotState = 'ready';
-    let slotTimer = null;
+    let slotStopTimers = [];
+    let slotFinishTimer = null;
+    let fireworksTimer = null;
+    let slotAudioContext = null;
+    let slotSoundEnabled = true;
 
     function formatWon(value) { return `₩${value.toLocaleString('ko-KR')}`; }
+
+    function clearSlotTimers() {
+      slotStopTimers.forEach((timer) => window.clearTimeout(timer));
+      slotStopTimers = [];
+      if (slotFinishTimer !== null) window.clearTimeout(slotFinishTimer);
+      slotFinishTimer = null;
+    }
+
+    function clearFireworks() {
+      if (fireworksTimer !== null) window.clearTimeout(fireworksTimer);
+      fireworksTimer = null;
+      slotFireworks.replaceChildren();
+    }
+
+    function prepareSlotAudio() {
+      if (!slotSoundEnabled || !window.AudioContext) return;
+      try {
+        if (!slotAudioContext) slotAudioContext = new AudioContext();
+        if (slotAudioContext.state === 'suspended') slotAudioContext.resume();
+      } catch (error) {
+        slotAudioContext = null;
+      }
+    }
+
+    function playFireworkSound(matchCount) {
+      if (!slotSoundEnabled || !slotAudioContext) return;
+      const notes = matchCount === 3 ? [392, 523, 659, 784] : [440, 587];
+      const now = slotAudioContext.currentTime;
+      notes.forEach((frequency, index) => {
+        const oscillator = slotAudioContext.createOscillator();
+        const gain = slotAudioContext.createGain();
+        oscillator.type = 'triangle';
+        oscillator.frequency.value = frequency;
+        gain.gain.setValueAtTime(.0001, now + index * .08);
+        gain.gain.exponentialRampToValueAtTime(.08, now + index * .08 + .02);
+        gain.gain.exponentialRampToValueAtTime(.0001, now + index * .08 + .22);
+        oscillator.connect(gain).connect(slotAudioContext.destination);
+        oscillator.start(now + index * .08);
+        oscillator.stop(now + index * .08 + .24);
+      });
+    }
+
+    function showFireworks(matchCount) {
+      clearFireworks();
+      if (matchCount < 2) return;
+      const particleCount = matchCount === 3 ? 64 : 18;
+      const colors = ['#e94d35', '#f2c94c', '#2471a3', '#f6f1e9'];
+      for (let index = 0; index < particleCount; index += 1) {
+        const particle = document.createElement('span');
+        particle.className = 'firework-particle';
+        particle.style.setProperty('--angle', `${(360 / particleCount) * index}deg`);
+        particle.style.setProperty('--distance', `${45 + Math.random() * 95}px`);
+        particle.style.setProperty('--particle-color', colors[index % colors.length]);
+        slotFireworks.appendChild(particle);
+      }
+      fireworksTimer = window.setTimeout(clearFireworks, 1200);
+      playFireworkSound(matchCount);
+    }
 
     function updateSlotUI() {
       slotBalanceValue.textContent = formatWon(slotBalance);
@@ -282,6 +346,9 @@
 
     function spinSlots() {
       if (slotState !== 'ready' || slotBalance < slotBet) return;
+      clearSlotTimers();
+      clearFireworks();
+      prepareSlotAudio();
       slotState = 'spinning';
       slotBalance -= slotBet;
       slotStatus.textContent = '레버를 당겼습니다. 기계가 잠깐 고민합니다.';
@@ -289,10 +356,17 @@
       slotReels.classList.add('spinning');
       slotSpinButton.classList.add('is-pulled');
       updateSlotUI();
-      slotTimer = window.setTimeout(() => {
-        const result = Array.from({ length: 3 }, () => slotSymbols[Math.floor(Math.random() * slotSymbols.length)]);
+      const result = Array.from({ length: 3 }, () => slotSymbols[Math.floor(Math.random() * slotSymbols.length)]);
+      [520, 760, 1000].forEach((delay, index) => {
+        const timer = window.setTimeout(() => {
+          slotReels.querySelector(`[data-reel="${index}"]`).classList.add('is-stopping');
+        }, delay);
+        slotStopTimers.push(timer);
+      });
+      slotFinishTimer = window.setTimeout(() => {
         slotReelSymbols.forEach((symbol, index) => { symbol.textContent = result[index]; });
         slotReels.classList.remove('spinning');
+        slotReels.querySelectorAll('.slot-reel').forEach((reel) => reel.classList.remove('is-stopping'));
         slotSpinButton.classList.remove('is-pulled');
         const counts = result.reduce((map, symbol) => ({ ...map, [symbol]: (map[symbol] || 0) + 1 }), {});
         const matchCount = Math.max(...Object.values(counts));
@@ -301,11 +375,12 @@
         slotBalance += payout;
         const message = multiplier ? `${matchCount}개 일치 · ${formatWon(payout)} 획득` : '일치 없음 · 기계가 모른 척합니다.';
         slotResult.textContent = message;
-        slotTimer = null;
+        showFireworks(matchCount);
+        slotFinishTimer = null;
         if (slotBalance >= 100000000) finishSlotGame('won', '게임 승리 · 잔액 목표에 도착했습니다.');
         else if (slotBalance === 0) finishSlotGame('gameover', '게임 오버 · 시드머니가 바닥났습니다.');
         else finishSlotGame('ready', message);
-      }, 720);
+      }, 1800);
     }
 
     slotBetButtons.forEach((button) => button.addEventListener('click', () => {
@@ -315,13 +390,20 @@
       updateSlotUI();
     }));
     slotSpinButton.addEventListener('click', spinSlots);
+    slotSoundToggle.addEventListener('click', () => {
+      slotSoundEnabled = !slotSoundEnabled;
+      slotSoundToggle.textContent = `폭죽 사운드 ${slotSoundEnabled ? '켜짐' : '꺼짐'}`;
+      slotSoundToggle.setAttribute('aria-pressed', String(slotSoundEnabled));
+      if (slotSoundEnabled) prepareSlotAudio();
+    });
     slotResetButton.addEventListener('click', () => {
-      if (slotTimer !== null) window.clearTimeout(slotTimer);
-      slotTimer = null;
+      clearSlotTimers();
+      clearFireworks();
       slotBalance = 10000;
       slotBet = 100;
       slotState = 'ready';
       slotReels.classList.remove('spinning');
+      slotReels.querySelectorAll('.slot-reel').forEach((reel) => reel.classList.remove('is-stopping'));
       slotSpinButton.classList.remove('is-pulled');
       slotReelSymbols.forEach((symbol, index) => { symbol.textContent = slotSymbols[index]; });
       slotStatus.textContent = '레버를 당겨 운을 호출하세요.';
