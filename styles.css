@@ -107,8 +107,8 @@ h3 { font-size: 1.25rem; }
 .slot-machine { border-top: 1px solid var(--line); margin-top: 4rem; padding-top: 3rem; }
 .slot-heading { align-items: end; display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
 .slot-layout { align-items: stretch; display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr) 250px; }
-.slot-cabinet { align-items: center; background: var(--ink); border: 1px solid var(--ink); border-radius: var(--radius); contain: paint; display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr) 110px; min-height: 300px; overflow: hidden; padding: 2rem; position: relative; }
-.slot-machine-art { box-sizing: border-box; clip-path: inset(0 round var(--radius)); height: 100%; inset: 0; max-height: 100%; max-width: 100%; object-fit: cover; opacity: .28; pointer-events: none; position: absolute; width: 100%; z-index: 0; }
+.slot-cabinet { align-items: center; background: var(--ink); border: 1px solid var(--ink); border-radius: var(--radius); display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr) 110px; min-height: 300px; overflow: hidden; padding: 2rem; position: relative; }
+.slot-machine-art { height: 100%; inset: 0; object-fit: cover; opacity: .28; pointer-events: none; position: absolute; width: 100%; z-index: 0; }
 .slot-reels { background: rgba(255, 255, 255, .94); border: 8px solid var(--yellow); border-radius: 6px; display: grid; gap: .6rem; grid-template-columns: repeat(3, 1fr); padding: .6rem; position: relative; z-index: 2; }
 .slot-reel { align-items: center; aspect-ratio: 1 / 1.2; background: rgba(244, 244, 244, .92); border: 1px solid var(--line); display: flex; justify-content: center; overflow: hidden; position: relative; }
 .reel-symbol { font-size: clamp(2.8rem, 7vw, 5.5rem); line-height: 1; }
