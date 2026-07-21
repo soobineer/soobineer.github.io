@@ -245,4 +245,89 @@
   pauseButton.addEventListener('click', togglePause);
   restartButton.addEventListener('click', startGame);
   draw();
+
+  const slotSpinButton = document.querySelector('#slot-spin-button');
+  const slotResetButton = document.querySelector('#slot-reset-button');
+  const slotReels = document.querySelector('.slot-reels');
+  const slotBalanceValue = document.querySelector('#slot-balance-value');
+  const slotBetValue = document.querySelector('#slot-bet-value');
+  const slotStatus = document.querySelector('#slot-status');
+  const slotResult = document.querySelector('#slot-result');
+  const slotBetButtons = document.querySelectorAll('[data-bet-change]');
+
+  if (slotSpinButton && slotResetButton && slotReels && slotBalanceValue && slotBetValue && slotStatus && slotResult) {
+    const slotSymbols = ['🍒', '🍋', '🔔', '⭐', '💎', '🍀', '7️⃣'];
+    const slotReelSymbols = slotReels.querySelectorAll('.reel-symbol');
+    let slotBalance = 10000;
+    let slotBet = 100;
+    let slotState = 'ready';
+    let slotTimer = null;
+
+    function formatWon(value) { return `₩${value.toLocaleString('ko-KR')}`; }
+
+    function updateSlotUI() {
+      slotBalanceValue.textContent = formatWon(slotBalance);
+      slotBetValue.textContent = formatWon(slotBet);
+      const locked = slotState === 'spinning' || slotState === 'gameover' || slotState === 'won';
+      slotSpinButton.disabled = locked || slotBalance < slotBet;
+      slotBetButtons.forEach((button) => { button.disabled = locked; });
+      slotResetButton.disabled = slotState === 'spinning';
+    }
+
+    function finishSlotGame(state, message) {
+      slotState = state;
+      slotStatus.textContent = message;
+      updateSlotUI();
+    }
+
+    function spinSlots() {
+      if (slotState !== 'ready' || slotBalance < slotBet) return;
+      slotState = 'spinning';
+      slotBalance -= slotBet;
+      slotStatus.textContent = '레버를 당겼습니다. 기계가 잠깐 고민합니다.';
+      slotResult.textContent = '회전 중... 결과는 곧 공개됩니다.';
+      slotReels.classList.add('spinning');
+      slotSpinButton.classList.add('is-pulled');
+      updateSlotUI();
+      slotTimer = window.setTimeout(() => {
+        const result = Array.from({ length: 3 }, () => slotSymbols[Math.floor(Math.random() * slotSymbols.length)]);
+        slotReelSymbols.forEach((symbol, index) => { symbol.textContent = result[index]; });
+        slotReels.classList.remove('spinning');
+        slotSpinButton.classList.remove('is-pulled');
+        const counts = result.reduce((map, symbol) => ({ ...map, [symbol]: (map[symbol] || 0) + 1 }), {});
+        const matchCount = Math.max(...Object.values(counts));
+        const multiplier = matchCount === 3 ? 10 : matchCount === 2 ? 2 : 0;
+        const payout = slotBet * multiplier;
+        slotBalance += payout;
+        const message = multiplier ? `${matchCount}개 일치 · ${formatWon(payout)} 획득` : '일치 없음 · 기계가 모른 척합니다.';
+        slotResult.textContent = message;
+        slotTimer = null;
+        if (slotBalance >= 100000000) finishSlotGame('won', '게임 승리 · 잔액 목표에 도착했습니다.');
+        else if (slotBalance === 0) finishSlotGame('gameover', '게임 오버 · 시드머니가 바닥났습니다.');
+        else finishSlotGame('ready', message);
+      }, 720);
+    }
+
+    slotBetButtons.forEach((button) => button.addEventListener('click', () => {
+      if (slotState !== 'ready') return;
+      const change = Number(button.dataset.betChange);
+      slotBet = Math.min(slotBalance, Math.max(100, slotBet + change));
+      updateSlotUI();
+    }));
+    slotSpinButton.addEventListener('click', spinSlots);
+    slotResetButton.addEventListener('click', () => {
+      if (slotTimer !== null) window.clearTimeout(slotTimer);
+      slotTimer = null;
+      slotBalance = 10000;
+      slotBet = 100;
+      slotState = 'ready';
+      slotReels.classList.remove('spinning');
+      slotSpinButton.classList.remove('is-pulled');
+      slotReelSymbols.forEach((symbol, index) => { symbol.textContent = slotSymbols[index]; });
+      slotStatus.textContent = '레버를 당겨 운을 호출하세요.';
+      slotResult.textContent = '기계는 아무것도 약속하지 않습니다.';
+      updateSlotUI();
+    });
+    updateSlotUI();
+  }
 })();
